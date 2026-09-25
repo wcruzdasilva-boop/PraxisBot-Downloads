@@ -1,0 +1,26 @@
+# Mantém ativo o projeto Supabase de contas do PraxisBot (plano gratuito pausa depois
+# de 7 dias sem uso, por exemplo nas férias). Toda segunda-feira: verifica o serviço e
+# tenta uma entrada com um e-mail inexistente (consulta o banco sem criar nada).
+# Endereço e chave "publishable" são públicos (vão dentro do app).
+name: Manter projeto de contas ativo
+
+on:
+  schedule:
+    - cron: '17 12 * * 1'   # segundas-feiras, 09:17 (horário de Brasília)
+  workflow_dispatch:
+
+jobs:
+  manter-ativo:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Consultar o serviço de contas
+        env:
+          URL_CONTAS: https://agptohtjasswuzffzpmh.supabase.co
+          CHAVE: sb_publishable_Rjr9Y8E7rq1hIYDiZDfJZg_opNnQcf8
+        run: |
+          curl -fsS -o /dev/null "$URL_CONTAS/auth/v1/health" -H "apikey: $CHAVE"
+          status=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$URL_CONTAS/auth/v1/token?grant_type=password" \
+            -H "apikey: $CHAVE" -H 'Content-Type: application/json' \
+            -d '{"email":"manter-ativo@praxisbot.invalid","password":"verificacao"}')
+          echo "Entrada de verificação: HTTP $status (400 = serviço no ar)"
+          test "$status" = "400"
